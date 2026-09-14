@@ -18,12 +18,12 @@ const parser = new Parser({
 });
 
 const FEEDS = [
+  { id: 'devto', name: 'Dev.to', url: 'https://dev.to/feed' },
   { id: 'hn', name: 'Hacker News', url: 'https://hnrss.org/frontpage' },
   { id: 'huggingface', name: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml' },
   { id: 'lobsters', name: 'Lobsters', url: 'https://lobste.rs/rss' },
   { id: 'bytebytego', name: 'ByteByteGo', url: 'https://blog.bytebytego.com/feed' },
   { id: 'netflix', name: 'Netflix Tech', url: 'https://netflixtechblog.com/feed' },
-  { id: 'devto', name: 'Dev.to', url: 'https://dev.to/feed' },
 ];
 
 export default async function handler(req: any, res: any) {
@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const urlObj = new URL(req.url || '', `http://${req.headers?.host || 'localhost'}`);
-    const feedId = (req.query?.id as string) || urlObj.searchParams.get('id') || 'hn';
+    const feedId = (req.query?.id as string) || urlObj.searchParams.get('id') || 'devto';
     const feedUrl = FEEDS.find(f => f.id === feedId)?.url || FEEDS[0].url;
 
     const feed = await parser.parseURL(feedUrl);
