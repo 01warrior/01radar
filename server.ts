@@ -50,10 +50,12 @@ const FEEDS = [
   { id: 'devto', name: 'Dev.to', url: 'https://dev.to/feed' },
 ];
 
-async function startServer() {
-  
-  // API: Get Feeds
-  app.get("/api/feeds", async (req, res) => {
+// ---------------------------------------------------------
+// API ROUTES (Extracted for Vercel Serverless compatibility)
+// ---------------------------------------------------------
+
+// API: Get Feeds
+app.get("/api/feeds", async (req, res) => {
     try {
       const feedId = req.query.id as string || 'hn';
       const feedUrl = FEEDS.find(f => f.id === feedId)?.url || FEEDS[0].url;
@@ -160,6 +162,11 @@ Format de sortie attendu :
     }
   });
 
+// ---------------------------------------------------------
+// LOCAL DEVELOPMENT & PRODUCTION SERVER START
+// (Ignored by Vercel, used by npm run dev / start)
+// ---------------------------------------------------------
+async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -181,4 +188,10 @@ Format de sortie attendu :
   });
 }
 
-startServer();
+// Only start the server if we're not in a Vercel environment
+if (process.env.VERCEL !== "1") {
+  startServer();
+}
+
+// Export the Express app for Vercel
+export default app;
