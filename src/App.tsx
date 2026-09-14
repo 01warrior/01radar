@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Newspaper, ChevronRight, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin } from 'lucide-react';
+import { Newspaper, ChevronRight, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -138,6 +138,13 @@ export default function App() {
     return FEEDS.filter(f => f.category === selectedCategory);
   }, [selectedCategory]);
 
+  // Titres aléatoires légers pour le bandeau d'actualités en haut (aucun impact perfs)
+  const tickerArticles = useMemo(() => {
+    if (!articles || articles.length === 0) return [];
+    // Prendre un échantillon varié de titres
+    return [...articles].sort(() => 0.5 - Math.random()).slice(0, 10);
+  }, [articles]);
+
   const filteredArticles = useMemo(() => {
     if (!searchQuery.trim()) return articles;
     const query = searchQuery.toLowerCase().trim();
@@ -216,6 +223,37 @@ export default function App() {
     <div className="min-h-screen bg-gray-50/60 text-gray-900 font-sans flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shrink-0">
+        {/* News Ticker Bar (Déroulant aléatoire ultra-léger) */}
+        {tickerArticles.length > 0 && (
+          <div className="bg-gray-900 text-gray-200 text-xs py-1.5 px-4 border-b border-gray-800 overflow-hidden relative flex items-center">
+            <div className="flex items-center gap-1.5 font-bold text-red-500 uppercase tracking-wider text-[11px] shrink-0 pr-3 z-10 bg-gray-900 shadow-lg">
+              <Flame size={13} className="animate-pulse text-red-500" />
+              <span>Flash Info :</span>
+            </div>
+            
+            {/* Dégradés latéraux */}
+            <div className="absolute left-24 top-0 bottom-0 w-6 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none" />
+
+            {/* Marquee de titres aléatoires */}
+            <div className="overflow-hidden flex-1 group">
+              <div className="animate-marquee-left flex items-center gap-8 whitespace-nowrap text-[12px]">
+                {[...tickerArticles, ...tickerArticles].map((art, i) => (
+                  <button
+                    key={`ticker-${art.link}-${i}`}
+                    onClick={() => handleGenerate(art)}
+                    className="inline-flex items-center gap-2 text-gray-300 hover:text-white hover:underline transition-colors text-left group-hover:cursor-pointer"
+                    title="Cliquer pour générer un post"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500/80 shrink-0" />
+                    <span className="font-medium truncate max-w-sm sm:max-w-md">{art.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex flex-col items-start">
             <img src="/logoheader.jpg" alt="01 radar logo" className="h-10 w-auto rounded-xl shadow-sm object-contain object-left sm:mb-1.5" />
@@ -461,7 +499,7 @@ export default function App() {
                   </button>
                   <div className="flex items-start">
                     <div>
-                      <h3 className="text-gray-900 font-bold text-lg mb-1.5 pr-6">
+                      <h3 className="text-gray-900 font-extrabold text-xl sm:text-2xl tracking-tight mb-2 pr-6">
                         Bienvenue sur 01 radar !
                       </h3>
                       <p className="text-gray-700 text-sm leading-relaxed max-w-3xl">

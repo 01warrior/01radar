@@ -23,6 +23,26 @@ html, body {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Marquee scrolling animation to left */
+@keyframes marquee-scroll-left {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-left {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll-left 42s linear infinite;
+}
+
+.animate-marquee-left:hover {
+  animation-play-state: paused;
+}
+
 /* Marquee scrolling animation */
 @keyframes marquee-scroll-right {
   0% {
