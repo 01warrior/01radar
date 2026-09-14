@@ -373,8 +373,31 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="w-full flex flex-col"
             >
+              {/* Instant Search Bar */}
+              <div className="mb-5">
+                <div className="relative flex items-center">
+                  <Search size={20} className="absolute left-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Rechercher dans les articles..."
+                    className="w-full pl-12 pr-11 py-3.5 sm:py-4 rounded-2xl bg-white border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 shadow-xs focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                      title="Effacer la recherche"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Category Pills & Feed Tabs Bar */}
-              <div className="pb-4 mb-5 border-b border-gray-200/80 flex flex-col gap-3">
+              <div className="pb-4 mb-6 border-b border-gray-200/80 flex flex-col gap-3">
                 {/* Category selector */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mr-1 shrink-0">Catégories :</span>
@@ -457,29 +480,6 @@ export default function App() {
                   >
                     <RefreshCw size={18} className={cn(loadingFeeds && "animate-spin")} />
                   </button>
-                </div>
-              </div>
-
-              {/* Instant Search Bar */}
-              <div className="mb-6">
-                <div className="relative flex items-center">
-                  <Search size={20} className="absolute left-4 text-gray-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher dans les articles..."
-                    className="w-full pl-12 pr-11 py-3.5 sm:py-4 rounded-2xl bg-white border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 shadow-xs focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
-                      title="Effacer la recherche"
-                    >
-                      <X size={18} />
-                    </button>
-                  )}
                 </div>
               </div>
 
