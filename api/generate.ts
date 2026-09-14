@@ -95,7 +95,7 @@ Format de sortie attendu :
 
     const genAI = getGenAI();
     const aiResponse = await genAI.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash-lite',
       contents: prompt
     });
 
