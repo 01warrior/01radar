@@ -11,19 +11,40 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const CATEGORIES = ['Tous', 'FR (Français)', 'Actualités IA', 'Recherche & Modèles', 'Ingénierie & Tech'] as const;
+
 const FEEDS: FeedSource[] = [
-  { id: 'devto', name: 'Dev.to' },
-  { id: 'hn', name: 'Hacker News' },
-  { id: 'huggingface', name: 'Hugging Face (IA)' },
-  { id: 'lobsters', name: 'Lobsters' },
-  { id: 'bytebytego', name: 'ByteByteGo' },
-  { id: 'netflix', name: 'Netflix Tech' },
+  // Médias Francophones (en tête)
+  { id: 'bfm_tech', name: 'BFM Tech IA', category: 'FR (Français)' },
+  { id: 'nouvelobs_ia', name: 'Nouvel Obs IA', category: 'FR (Français)' },
+  { id: 'clubic', name: 'Clubic Tech', category: 'FR (Français)' },
+
+  // Actualités IA & Startups
+  { id: 'tldrai', name: 'TLDR AI', category: 'Actualités IA' },
+  { id: 'techcrunch_ai', name: 'TechCrunch AI', category: 'Actualités IA' },
+  { id: 'theverge_ai', name: 'The Verge AI', category: 'Actualités IA' },
+  { id: 'arstechnica', name: 'Ars Technica', category: 'Actualités IA' },
+
+  // Modèles & Recherche IA
+  { id: 'huggingface', name: 'Hugging Face', category: 'Recherche & Modèles' },
+  { id: 'google_research', name: 'Google Research', category: 'Recherche & Modèles' },
+  { id: 'lastweekinai', name: 'Last Week in AI', category: 'Recherche & Modèles' },
+  { id: 'importai', name: 'Import AI', category: 'Recherche & Modèles' },
+  { id: 'mit_tech_review', name: 'MIT Tech Review', category: 'Recherche & Modèles' },
+
+  // Ingénierie & Dev généraliste
+  { id: 'devto', name: 'Dev.to', category: 'Ingénierie & Tech' },
+  { id: 'hn', name: 'Hacker News', category: 'Ingénierie & Tech' },
+  { id: 'bytebytego', name: 'ByteByteGo', category: 'Ingénierie & Tech' },
+  { id: 'netflix', name: 'Netflix Tech', category: 'Ingénierie & Tech' },
+  { id: 'lobsters', name: 'Lobsters', category: 'Ingénierie & Tech' },
 ];
 
 const QUICK_TAGS = ['React', 'Docker', 'Postgres', 'IA'];
 
 export default function App() {
-  const [activeFeed, setActiveFeed] = useState<string>('devto');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
+  const [activeFeed, setActiveFeed] = useState<string>('bfm_tech');
   const [articles, setArticles] = useState<FeedItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loadingFeeds, setLoadingFeeds] = useState(false);
@@ -111,6 +132,11 @@ export default function App() {
       setGenerating(false);
     }
   };
+
+  const visibleFeeds = useMemo(() => {
+    if (selectedCategory === 'Tous') return FEEDS;
+    return FEEDS.filter(f => f.category === selectedCategory);
+  }, [selectedCategory]);
 
   const filteredArticles = useMemo(() => {
     if (!searchQuery.trim()) return articles;
@@ -301,32 +327,68 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="w-full flex flex-col"
             >
-              {/* Feed Tabs Bar */}
-              <div className="pb-4 mb-4 border-b border-gray-200/80 flex items-center justify-between gap-4">
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
-                  {FEEDS.map(feed => (
+              {/* Category Pills & Feed Tabs Bar */}
+              <div className="pb-4 mb-5 border-b border-gray-200/80 flex flex-col gap-3">
+                {/* Category selector */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mr-1 shrink-0">Catégories :</span>
+                  {CATEGORIES.map((cat) => (
                     <button
-                      key={feed.id}
-                      onClick={() => setActiveFeed(feed.id)}
+                      key={cat}
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        const firstInCat = cat === 'Tous' ? FEEDS[0] : FEEDS.find(f => f.category === cat);
+                        if (firstInCat && !visibleFeeds.some(f => f.id === activeFeed)) {
+                          setActiveFeed(firstInCat.id);
+                        }
+                      }}
                       className={cn(
-                        "whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200",
-                        activeFeed === feed.id
-                          ? "bg-red-600 text-white shadow-md shadow-red-600/20"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0",
+                        selectedCategory === cat
+                          ? "bg-gray-900 text-white shadow-xs"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900"
                       )}
                     >
-                      {feed.name}
+                      {cat}
                     </button>
                   ))}
                 </div>
-                <button 
-                  onClick={() => fetchFeeds(activeFeed)}
-                  disabled={loadingFeeds}
-                  className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors shrink-0"
-                  title="Rafraîchir"
-                >
-                  <RefreshCw size={18} className={cn(loadingFeeds && "animate-spin")} />
-                </button>
+
+                {/* Feed Pills in Category with smooth marquee scrolling towards right */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="relative overflow-hidden flex-1 group py-1">
+                    {/* Gradient masks left & right for smooth blend */}
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
+                    
+                    {/* Marquee track scrolling to the right */}
+                    <div className="animate-marquee-right flex items-center gap-2.5">
+                      {[...visibleFeeds, ...visibleFeeds].map((feed, idx) => (
+                        <button
+                          key={`${feed.id}-${idx}`}
+                          onClick={() => setActiveFeed(feed.id)}
+                          className={cn(
+                            "whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 shrink-0",
+                            activeFeed === feed.id
+                              ? "bg-red-600 text-white shadow-md shadow-red-600/25 scale-[1.02]"
+                              : "text-gray-700 hover:text-gray-900 bg-white hover:bg-gray-100/90 border border-gray-200/80 shadow-2xs hover:border-gray-300"
+                          )}
+                        >
+                          {feed.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => fetchFeeds(activeFeed)}
+                    disabled={loadingFeeds}
+                    className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors shrink-0 self-center"
+                    title="Rafraîchir"
+                  >
+                    <RefreshCw size={18} className={cn(loadingFeeds && "animate-spin")} />
+                  </button>
+                </div>
               </div>
 
               {/* Instant Search Bar & Quick Tags */}

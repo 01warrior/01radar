@@ -8,6 +8,7 @@ export interface FeedItem {
 export interface FeedSource {
   id: string;
   name: string;
+  category?: string;
 }
 
 export interface SavedPost {
