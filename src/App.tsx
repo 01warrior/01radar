@@ -13,8 +13,6 @@ function cn(...inputs: ClassValue[]) {
 
 const FEEDS: FeedSource[] = [
   { id: 'hn', name: 'Hacker News' },
-  { id: 'reddit', name: 'r/programming' },
-  { id: 'reddit-ml', name: 'r/MachineLearning (IA)' },
   { id: 'huggingface', name: 'Hugging Face (IA)' },
   { id: 'lobsters', name: 'Lobsters' },
   { id: 'bytebytego', name: 'ByteByteGo' },

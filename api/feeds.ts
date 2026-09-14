@@ -19,8 +19,6 @@ const parser = new Parser({
 
 const FEEDS = [
   { id: 'hn', name: 'Hacker News', url: 'https://hnrss.org/frontpage' },
-  { id: 'reddit', name: 'r/programming', url: 'https://www.reddit.com/r/programming/.rss' },
-  { id: 'reddit-ml', name: 'r/MachineLearning', url: 'https://www.reddit.com/r/MachineLearning/.rss' },
   { id: 'huggingface', name: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml' },
   { id: 'lobsters', name: 'Lobsters', url: 'https://lobste.rs/rss' },
   { id: 'bytebytego', name: 'ByteByteGo', url: 'https://blog.bytebytego.com/feed' },
