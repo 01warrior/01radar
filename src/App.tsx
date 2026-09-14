@@ -271,7 +271,7 @@ export default function App() {
             >
               {/* Feed Tabs Bar */}
               <div className="pb-4 mb-6 border-b border-gray-200/80 flex items-center justify-between gap-4">
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
                   {FEEDS.map(feed => (
                     <button
                       key={feed.id}
