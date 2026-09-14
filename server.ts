@@ -1,15 +1,22 @@
 import express from "express";
 import path from "path";
-import app from "./api/app.js";
+import feedsHandler from "./api/feeds.js";
+import generateHandler from "./api/generate.js";
 
+const app = express();
 const PORT = 3000;
+
+app.use(express.json());
+
+// Mount API routes
+app.all("/api/feeds", (req, res) => feedsHandler(req, res));
+app.all("/api/generate", (req, res) => generateHandler(req, res));
 
 // ---------------------------------------------------------
 // LOCAL DEVELOPMENT & PRODUCTION SERVER START
-// (Ignored by Vercel, used by npm run dev / start)
+// (Used by npm run dev / start in AI Studio environment)
 // ---------------------------------------------------------
 async function startServer() {
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
@@ -30,9 +37,6 @@ async function startServer() {
   });
 }
 
-// Only start the server if we're not in a Vercel environment
-if (process.env.VERCEL !== "1") {
-  startServer();
-}
+startServer();
 
 export default app;

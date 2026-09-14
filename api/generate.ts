@@ -1,31 +1,11 @@
-import express from "express";
-import Parser from 'rss-parser';
 import * as cheerio from 'cheerio';
 import { GoogleGenAI } from "@google/genai";
 
-const app = express();
-
-app.use(express.json());
-
-// Init RSS Parser
-const parser = new Parser({
-  customFields: {
-    item: ['description', 'content', 'content:encoded', 'pubDate'],
-  },
-  requestOptions: {
-    headers: {
-      'User-Agent': 'web:01-radar-veille-tech:v1.0.0 (by /u/developer)',
-      'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-    }
-  }
-});
-
-// Configure Google Gen AI
 let ai: GoogleGenAI | null = null;
 function getGenAI() {
   if (!ai) {
     if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is missing. Configure it in Settings > Secrets.");
+      throw new Error("GEMINI_API_KEY is missing. Veuillez ajouter la variable d'environnement GEMINI_API_KEY dans les paramètres de votre projet Vercel (Settings > Environment Variables).");
     }
     ai = new GoogleGenAI({ 
       apiKey: process.env.GEMINI_API_KEY,
@@ -35,47 +15,32 @@ function getGenAI() {
   return ai;
 }
 
-// Feeds List
-const FEEDS = [
-  { id: 'hn', name: 'Hacker News', url: 'https://hnrss.org/frontpage' },
-  { id: 'reddit', name: 'r/programming', url: 'https://www.reddit.com/r/programming/.rss' },
-  { id: 'reddit-ml', name: 'r/MachineLearning', url: 'https://www.reddit.com/r/MachineLearning/.rss' },
-  { id: 'huggingface', name: 'Hugging Face', url: 'https://huggingface.co/blog/feed.xml' },
-  { id: 'lobsters', name: 'Lobsters', url: 'https://lobste.rs/rss' },
-  { id: 'bytebytego', name: 'ByteByteGo', url: 'https://blog.bytebytego.com/feed' },
-  { id: 'netflix', name: 'Netflix Tech', url: 'https://netflixtechblog.com/feed' },
-  { id: 'devto', name: 'Dev.to', url: 'https://dev.to/feed' },
-];
+export default async function handler(req: any, res: any) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-// ---------------------------------------------------------
-// API ROUTES
-// ---------------------------------------------------------
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-// API: Get Feeds
-app.get("/api/feeds", async (req, res) => {
-    try {
-      const feedId = req.query.id as string || 'hn';
-      const feedUrl = FEEDS.find(f => f.id === feedId)?.url || FEEDS[0].url;
-      
-      const feed = await parser.parseURL(feedUrl);
-      const items = feed.items.slice(0, 15).map(item => ({
-        title: item.title || 'Untitled',
-        link: item.link || '',
-        date: item.pubDate || item.isoDate || new Date().toISOString(),
-        snippet: item.contentSnippet || (item as any).snippet || item.description || ''
-      }));
-      
-      res.json({ success: true, items });
-    } catch (error) {
-      console.error('Error fetching feeds:', error);
-      res.status(500).json({ success: false, error: 'Failed to fetch feeds' });
-    }
-});
-
-// API: Generate Post
-app.post("/api/generate", async (req, res) => {
   try {
-    const { url } = req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const url = body?.url;
     if (!url) {
       return res.status(400).json({ success: false, error: 'URL is required' });
     }
@@ -87,28 +52,22 @@ app.post("/api/generate", async (req, res) => {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         },
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(6000)
       });
       if (response.ok) {
         const html = await response.text();
         const $ = cheerio.load(html);
         
-        // Remove scripts, styles, etc.
         $('script, style, nav, footer, iframe, noscript, header, aside').remove();
-        
-        // Get the main text
         articleText = $('body').text().replace(/\s+/g, ' ').trim();
-      } else {
-        console.warn('Failed to fetch full article, using URL only', response.status);
       }
     } catch (err) {
-      console.warn('Error fetching full article', err);
+      console.warn('Error fetching full article content, using URL fallback', err);
     }
 
     if (!articleText) {
       articleText = 'Contenu de l\'article non disponible directement, veuillez vous baser sur le titre ou l\'URL : ' + url;
     } else {
-      // Limit text to avoid huge context (30k chars is plenty for Gemini Flash)
       articleText = articleText.substring(0, 30000); 
     }
 
@@ -136,15 +95,14 @@ Format de sortie attendu :
 
     const genAI = getGenAI();
     const aiResponse = await genAI.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-2.5-flash',
       contents: prompt
     });
 
-    res.json({ success: true, post: aiResponse.text });
-
+    res.status(200).json({ success: true, post: aiResponse.text });
   } catch (error: any) {
     console.error('Error generating post:', error);
-    let errorMessage = error.message || 'Failed to generate post';
+    let errorMessage = error?.message || 'Failed to generate post';
     try {
       if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
         const parsed = JSON.parse(errorMessage);
@@ -153,10 +111,8 @@ Format de sortie attendu :
         }
       }
     } catch (e) {
-      // ignore JSON parse errors
+      // ignore JSON parse
     }
-    res.status(500).json({ success: false, error: errorMessage });
+    res.status(200).json({ success: false, error: errorMessage });
   }
-});
-
-export default app;
+}
