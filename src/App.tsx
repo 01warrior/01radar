@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Newspaper, ChevronRight, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -40,8 +40,6 @@ const FEEDS: FeedSource[] = [
   { id: 'lobsters', name: 'Lobsters', category: 'Ingénierie & Tech' },
 ];
 
-const QUICK_TAGS = ['React', 'Docker', 'Postgres', 'IA'];
-
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [activeFeed, setActiveFeed] = useState<string>('bfm_tech');
@@ -56,6 +54,17 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const feedsScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollFeeds = (direction: 'left' | 'right') => {
+    if (feedsScrollRef.current) {
+      const scrollAmount = 260;
+      feedsScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
   
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>(() => {
     try {
@@ -225,15 +234,14 @@ export default function App() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shrink-0">
         {/* News Ticker Bar (Déroulant aléatoire ultra-léger) */}
         {tickerArticles.length > 0 && (
-          <div className="bg-gray-900 text-gray-200 text-xs py-1.5 px-4 border-b border-gray-800 overflow-hidden relative flex items-center">
-            <div className="flex items-center gap-1.5 font-bold text-red-500 uppercase tracking-wider text-[11px] shrink-0 pr-3 z-10 bg-gray-900 shadow-lg">
-              <Flame size={13} className="animate-pulse text-red-500" />
-              <span>Flash Info :</span>
+          <div className="bg-gray-900 text-gray-200 text-xs py-2 px-4 border-b border-gray-800 overflow-hidden relative flex items-center gap-3">
+            <div className="flex items-center gap-1.5 font-bold text-red-500 uppercase tracking-wider text-[11px] shrink-0 z-10 select-none">
+              <Flame size={14} className="animate-pulse text-red-500 shrink-0" />
+              <span className="whitespace-nowrap">Flash Info :</span>
             </div>
             
-            {/* Dégradés latéraux */}
-            <div className="absolute left-24 top-0 bottom-0 w-6 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none" />
+            {/* Dégradés latéraux doux */}
+            <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-900 via-gray-900/80 to-transparent z-10 pointer-events-none" />
 
             {/* Marquee de titres aléatoires */}
             <div className="overflow-hidden flex-1 group">
@@ -242,7 +250,7 @@ export default function App() {
                   <button
                     key={`ticker-${art.link}-${i}`}
                     onClick={() => handleGenerate(art)}
-                    className="inline-flex items-center gap-2 text-gray-300 hover:text-white hover:underline transition-colors text-left group-hover:cursor-pointer"
+                    className="inline-flex items-center gap-2 text-gray-300 hover:text-white hover:underline transition-colors text-left cursor-pointer"
                     title="Cliquer pour générer un post"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500/80 shrink-0" />
@@ -392,18 +400,31 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Feed Pills in Category with smooth marquee scrolling towards right */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="relative overflow-hidden flex-1 group py-1">
-                    {/* Gradient masks left & right for smooth blend */}
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
+                {/* Feed Pills in Category with smooth scroll and controls */}
+                <div className="flex items-center gap-1.5 w-full">
+                  {/* Bouton défilement gauche */}
+                  <button
+                    onClick={() => scrollFeeds('left')}
+                    className="hidden sm:flex items-center justify-center p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors shrink-0"
+                    title="Défiler vers la gauche"
+                    aria-label="Défiler vers la gauche"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+
+                  <div className="relative overflow-hidden flex-1 py-1">
+                    {/* Gradient masks left & right */}
+                    <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-gray-50 to-transparent z-10 pointer-events-none" />
+                    <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-gray-50 to-transparent z-10 pointer-events-none" />
                     
-                    {/* Marquee track scrolling to the right */}
-                    <div className="animate-marquee-right flex items-center gap-2.5">
-                      {[...visibleFeeds, ...visibleFeeds].map((feed, idx) => (
+                    {/* Zone entièrement scrollable au doigt, molette ou trackpad */}
+                    <div 
+                      ref={feedsScrollRef}
+                      className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 px-2 scrollbar-hide no-scrollbar touch-pan-x cursor-grab active:cursor-grabbing select-none"
+                    >
+                      {visibleFeeds.map((feed) => (
                         <button
-                          key={`${feed.id}-${idx}`}
+                          key={feed.id}
                           onClick={() => setActiveFeed(feed.id)}
                           className={cn(
                             "whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 shrink-0",
@@ -418,10 +439,20 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Bouton défilement droite */}
+                  <button
+                    onClick={() => scrollFeeds('right')}
+                    className="hidden sm:flex items-center justify-center p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors shrink-0"
+                    title="Défiler vers la droite"
+                    aria-label="Défiler vers la droite"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+
                   <button 
                     onClick={() => fetchFeeds(activeFeed)}
                     disabled={loadingFeeds}
-                    className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors shrink-0 self-center"
+                    className="p-2 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors shrink-0 self-center ml-1"
                     title="Rafraîchir"
                   >
                     <RefreshCw size={18} className={cn(loadingFeeds && "animate-spin")} />
@@ -429,15 +460,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Instant Search Bar & Quick Tags */}
-              <div className="mb-6 flex flex-col gap-3">
+              {/* Instant Search Bar */}
+              <div className="mb-6">
                 <div className="relative flex items-center">
                   <Search size={20} className="absolute left-4 text-gray-400 pointer-events-none" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un mot-clé (React, Docker, Postgres, IA...)"
+                    placeholder="Rechercher dans les articles..."
                     className="w-full pl-12 pr-11 py-3.5 sm:py-4 rounded-2xl bg-white border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 shadow-xs focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
                   />
                   {searchQuery && (
@@ -447,36 +478,6 @@ export default function App() {
                       title="Effacer la recherche"
                     >
                       <X size={18} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Quick Tags Suggestions */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
-                  <span className="text-gray-400 font-medium shrink-0 text-xs hidden sm:inline">Mots-clés :</span>
-                  {QUICK_TAGS.map((tag) => {
-                    const isSelected = searchQuery.toLowerCase() === tag.toLowerCase();
-                    return (
-                      <button
-                        key={tag}
-                        onClick={() => setSearchQuery(isSelected ? '' : tag)}
-                        className={cn(
-                          "px-3.5 py-1.5 rounded-full font-medium transition-all shrink-0 border text-xs sm:text-sm",
-                          isSelected
-                            ? "bg-red-600 text-white border-red-600 font-semibold shadow-sm"
-                            : "bg-white text-gray-700 border-gray-200/90 hover:border-gray-300 hover:text-gray-900 shadow-xs"
-                        )}
-                      >
-                        {tag}
-                      </button>
-                    );
-                  })}
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="text-xs text-red-600 hover:text-red-700 font-semibold ml-1 shrink-0"
-                    >
-                      Réinitialiser ({filteredArticles.length})
                     </button>
                   )}
                 </div>
