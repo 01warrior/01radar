@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Newspaper, ChevronRight, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Newspaper, ChevronRight, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -20,9 +20,12 @@ const FEEDS: FeedSource[] = [
   { id: 'netflix', name: 'Netflix Tech' },
 ];
 
+const QUICK_TAGS = ['React', 'Docker', 'Postgres', 'IA', 'Rust', 'TypeScript', 'Node.js', 'DevOps'];
+
 export default function App() {
   const [activeFeed, setActiveFeed] = useState<string>('devto');
   const [articles, setArticles] = useState<FeedItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [loadingFeeds, setLoadingFeeds] = useState(false);
   const [errorFeeds, setErrorFeeds] = useState<string | null>(null);
   
@@ -30,6 +33,7 @@ export default function App() {
   const [generating, setGenerating] = useState(false);
   const [generatedPost, setGeneratedPost] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>(() => {
@@ -106,6 +110,34 @@ export default function App() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const filteredArticles = useMemo(() => {
+    if (!searchQuery.trim()) return articles;
+    const query = searchQuery.toLowerCase().trim();
+    return articles.filter(article => {
+      const titleMatch = (article.title || '').toLowerCase().includes(query);
+      const snippetMatch = (article.snippet || '').toLowerCase().includes(query);
+      return titleMatch || snippetMatch;
+    });
+  }, [articles, searchQuery]);
+
+  const handleShareLinkedIn = (textToShare: string) => {
+    if (!textToShare) return;
+    try {
+      navigator.clipboard.writeText(textToShare);
+      setCopied(true);
+      setShared(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShared(false);
+      }, 3000);
+    } catch (err) {
+      console.error('Failed to copy text', err);
+    }
+
+    const shareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(textToShare)}`;
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleCopy = async () => {
@@ -270,7 +302,7 @@ export default function App() {
               className="w-full flex flex-col"
             >
               {/* Feed Tabs Bar */}
-              <div className="pb-4 mb-6 border-b border-gray-200/80 flex items-center justify-between gap-4">
+              <div className="pb-4 mb-4 border-b border-gray-200/80 flex items-center justify-between gap-4">
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
                   {FEEDS.map(feed => (
                     <button
@@ -295,6 +327,59 @@ export default function App() {
                 >
                   <RefreshCw size={18} className={cn(loadingFeeds && "animate-spin")} />
                 </button>
+              </div>
+
+              {/* Instant Search Bar & Quick Tags */}
+              <div className="mb-6 flex flex-col gap-2.5">
+                <div className="relative flex items-center">
+                  <Search size={18} className="absolute left-4 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Rechercher un mot-clé (React, Docker, Postgres, IA, Rust...)"
+                    className="w-full pl-11 pr-10 py-2.5 sm:py-3 rounded-2xl bg-white border border-gray-200/90 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3.5 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                      title="Effacer la recherche"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Tags Suggestions */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x text-xs">
+                  <span className="text-gray-400 font-medium shrink-0 mr-1 hidden sm:inline">Recherches populaires :</span>
+                  {QUICK_TAGS.map((tag) => {
+                    const isSelected = searchQuery.toLowerCase() === tag.toLowerCase();
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => setSearchQuery(isSelected ? '' : tag)}
+                        className={cn(
+                          "px-3 py-1 rounded-full font-medium transition-all shrink-0 border text-xs",
+                          isSelected
+                            ? "bg-red-600 text-white border-red-600 font-semibold shadow-xs"
+                            : "bg-white text-gray-600 border-gray-200/80 hover:border-gray-300 hover:text-gray-900 shadow-xs"
+                        )}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="text-xs text-red-600 hover:text-red-700 font-semibold ml-1 shrink-0"
+                    >
+                      Réinitialiser ({filteredArticles.length})
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Welcome Alert */}
@@ -330,56 +415,86 @@ export default function App() {
                 {loadingFeeds && articles.length === 0 ? (
                   <div className="py-24 flex flex-col items-center justify-center text-gray-400 gap-3">
                     <Loader2 size={28} className="animate-spin text-red-600" />
-                    <p className="text-sm">Chargement des articles...</p>
+                    <p className="text-sm font-medium">Chargement des articles...</p>
                   </div>
                 ) : errorFeeds ? (
                   <div className="p-4 rounded-xl bg-red-50 text-red-700 border border-red-200 text-sm">
                     {errorFeeds}
                   </div>
                 ) : articles.length === 0 ? (
-                  <div className="text-center text-gray-500 py-16">
+                  <div className="text-center text-gray-500 py-16 font-medium">
                     Aucun article trouvé pour ce flux.
                   </div>
+                ) : filteredArticles.length === 0 ? (
+                  <div className="py-16 px-4 text-center bg-white rounded-2xl border border-gray-100 shadow-xs flex flex-col items-center justify-center gap-3">
+                    <div className="p-3 bg-red-50 text-red-600 rounded-full">
+                      <Search size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-base mb-1">
+                        Aucun article ne correspond à « {searchQuery} »
+                      </h4>
+                      <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                        Aucun résultat dans les {articles.length} articles de ce flux. Essayez un autre mot-clé ou réinitialisez le filtre.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="mt-1 px-5 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
+                    >
+                      Effacer la recherche
+                    </button>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {articles.map((article, idx) => (
-                      <div 
-                        key={idx} 
-                        className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-red-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 flex flex-col gap-3 relative"
-                      >
-                        <div>
-                          <h3 className="font-bold text-gray-900 text-lg leading-snug mb-2 group-hover:text-red-600 transition-colors line-clamp-2">
-                            {article.title}
-                          </h3>
-                          <p className="text-xs text-gray-400 font-medium tracking-wide uppercase">
-                            {formatDate(article.date)}
-                          </p>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed flex-1">
-                          {article.snippet.replace(/<[^>]*>?/gm, '') || "Aucun résumé disponible."}
-                        </p>
-                        
-                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
-                          <a 
-                            href={article.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="text-xs font-semibold text-gray-500 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
-                          >
-                            <ExternalLink size={14} />
-                            Lire l'original
-                          </a>
-                          <button
-                            onClick={() => handleGenerate(article)}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-800 group-hover:bg-red-600 group-hover:text-white text-sm font-semibold rounded-full transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:shadow-red-600/20"
-                          >
-                            <span>Générer</span>
-                            <ArrowRight size={16} />
-                          </button>
-                        </div>
+                  <div>
+                    {searchQuery && (
+                      <div className="mb-4 flex items-center justify-between text-xs text-gray-500 font-medium">
+                        <span>{filteredArticles.length} {filteredArticles.length > 1 ? 'articles trouvés' : 'article trouvé'} pour « {searchQuery} »</span>
+                        <button onClick={() => setSearchQuery('')} className="text-red-600 hover:underline">
+                          Voir tous les articles
+                        </button>
                       </div>
-                    ))}
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {filteredArticles.map((article, idx) => (
+                        <div 
+                          key={idx} 
+                          className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-red-200 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 flex flex-col gap-3 relative"
+                        >
+                          <div>
+                            <h3 className="font-bold text-gray-900 text-lg leading-snug mb-2 group-hover:text-red-600 transition-colors line-clamp-2">
+                              {article.title}
+                            </h3>
+                            <p className="text-xs text-gray-400 font-medium tracking-wide uppercase">
+                              {formatDate(article.date)}
+                            </p>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 line-clamp-3 leading-relaxed flex-1">
+                            {article.snippet.replace(/<[^>]*>?/gm, '') || "Aucun résumé disponible."}
+                          </p>
+                          
+                          <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                            <a 
+                              href={article.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-xs font-semibold text-gray-500 hover:text-gray-900 flex items-center gap-1.5 transition-colors"
+                            >
+                              <ExternalLink size={14} />
+                              Lire l'original
+                            </a>
+                            <button
+                              onClick={() => handleGenerate(article)}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-800 group-hover:bg-red-600 group-hover:text-white text-sm font-semibold rounded-full transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:shadow-red-600/20"
+                            >
+                              <span>Générer</span>
+                              <ArrowRight size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -408,7 +523,7 @@ export default function App() {
                     Brouillon LinkedIn
                   </h2>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {(generatedPost || generationError) && (
                     <button
                       onClick={() => handleGenerate(selectedArticle)}
@@ -421,12 +536,12 @@ export default function App() {
                     </button>
                   )}
                   {generatedPost && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={handleSavePost}
                         disabled={isCurrentPostSaved}
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-sm",
+                          "inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-sm",
                           isCurrentPostSaved
                             ? "bg-gray-100 text-gray-500 cursor-default border border-transparent"
                             : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
@@ -438,14 +553,22 @@ export default function App() {
                       <button
                         onClick={handleCopy}
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-sm",
-                          copied 
+                          "inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-sm",
+                          copied && !shared
                             ? "bg-green-600 text-white hover:bg-green-700" 
-                            : "bg-red-600 text-white hover:bg-red-700 hover:shadow-md hover:shadow-red-600/20"
+                            : "bg-gray-900 text-white hover:bg-gray-800"
                         )}
                       >
-                        {copied ? <Check size={16} /> : <Copy size={16} />}
-                        <span className="hidden sm:inline">{copied ? "Copié !" : "Copier le texte"}</span>
+                        {copied && !shared ? <Check size={16} /> : <Copy size={16} />}
+                        <span className="hidden sm:inline">{copied && !shared ? "Copié !" : "Copier"}</span>
+                      </button>
+                      <button
+                        onClick={() => handleShareLinkedIn(generatedPost)}
+                        className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all bg-[#0a66c2] hover:bg-[#004182] text-white shadow-sm hover:shadow-md hover:shadow-blue-600/25"
+                        title="Copie le texte et ouvre LinkedIn pour publier"
+                      >
+                        <Linkedin size={16} className="fill-current shrink-0" />
+                        <span>Partager sur LinkedIn</span>
                       </button>
                     </div>
                   )}
@@ -506,8 +629,8 @@ export default function App() {
                       </div>
                       <div className="text-sm">
                         <p className="font-semibold mb-0.5">Conseil de publication</p>
-                        <p className="text-blue-800">
-                          Relisez le brouillon, ajoutez votre touche personnelle, puis copiez-collez-le directement sur votre profil LinkedIn.
+                        <p className="text-blue-800 leading-relaxed">
+                          Cliquez sur <strong>Partager sur LinkedIn</strong> pour ouvrir directement l'interface de publication LinkedIn avec votre texte copié. Si LinkedIn ne pré-remplit pas le champ dans votre navigateur, faites simplement <strong>Coller (Ctrl+V ou ⌘+V)</strong>.
                         </p>
                       </div>
                     </div>
@@ -555,7 +678,7 @@ export default function App() {
                   {viewingSavedPost.content}
                 </div>
                 
-                <div className="p-5 border-t border-gray-100 flex justify-between items-center bg-white">
+                <div className="p-5 border-t border-gray-100 flex justify-between items-center bg-white flex-wrap gap-3">
                   <button
                     onClick={() => {
                       handleDeletePost(viewingSavedPost.id);
@@ -566,22 +689,32 @@ export default function App() {
                     <Trash2 size={16} />
                     <span className="hidden sm:inline">Supprimer</span>
                   </button>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(viewingSavedPost.content);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm",
-                      copied 
-                        ? "bg-green-600 text-white hover:bg-green-700" 
-                        : "bg-red-600 text-white hover:bg-red-700 hover:shadow-md hover:shadow-red-600/20"
-                    )}
-                  >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                    <span>{copied ? "Copié !" : "Copier le texte"}</span>
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(viewingSavedPost.content);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-all shadow-sm",
+                        copied && !shared
+                          ? "bg-green-600 text-white hover:bg-green-700" 
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      )}
+                    >
+                      {copied && !shared ? <Check size={16} /> : <Copy size={16} />}
+                      <span className="hidden sm:inline">{copied && !shared ? "Copié !" : "Copier"}</span>
+                    </button>
+                    <button
+                      onClick={() => handleShareLinkedIn(viewingSavedPost.content)}
+                      className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all bg-[#0a66c2] hover:bg-[#004182] text-white shadow-sm hover:shadow-md hover:shadow-blue-600/25"
+                      title="Copie le texte et ouvre LinkedIn pour publier"
+                    >
+                      <Linkedin size={16} className="fill-current shrink-0" />
+                      <span>Partager sur LinkedIn</span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
