@@ -20,7 +20,7 @@ const FEEDS: FeedSource[] = [
   { id: 'netflix', name: 'Netflix Tech' },
 ];
 
-const QUICK_TAGS = ['React', 'Docker', 'Postgres', 'IA', 'Rust', 'TypeScript', 'Node.js', 'DevOps'];
+const QUICK_TAGS = ['React', 'Docker', 'Postgres', 'IA'];
 
 export default function App() {
   const [activeFeed, setActiveFeed] = useState<string>('devto');
@@ -330,30 +330,30 @@ export default function App() {
               </div>
 
               {/* Instant Search Bar & Quick Tags */}
-              <div className="mb-6 flex flex-col gap-2.5">
+              <div className="mb-6 flex flex-col gap-3">
                 <div className="relative flex items-center">
-                  <Search size={18} className="absolute left-4 text-gray-400 pointer-events-none" />
+                  <Search size={20} className="absolute left-4 text-gray-400 pointer-events-none" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher un mot-clé (React, Docker, Postgres, IA, Rust...)"
-                    className="w-full pl-11 pr-10 py-2.5 sm:py-3 rounded-2xl bg-white border border-gray-200/90 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
+                    placeholder="Rechercher un mot-clé (React, Docker, Postgres, IA...)"
+                    className="w-full pl-12 pr-11 py-3.5 sm:py-4 rounded-2xl bg-white border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 shadow-xs focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-medium"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3.5 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                      className="absolute right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
                       title="Effacer la recherche"
                     >
-                      <X size={16} />
+                      <X size={18} />
                     </button>
                   )}
                 </div>
 
                 {/* Quick Tags Suggestions */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x text-xs">
-                  <span className="text-gray-400 font-medium shrink-0 mr-1 hidden sm:inline">Recherches populaires :</span>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
+                  <span className="text-gray-400 font-medium shrink-0 text-xs hidden sm:inline">Mots-clés :</span>
                   {QUICK_TAGS.map((tag) => {
                     const isSelected = searchQuery.toLowerCase() === tag.toLowerCase();
                     return (
@@ -361,10 +361,10 @@ export default function App() {
                         key={tag}
                         onClick={() => setSearchQuery(isSelected ? '' : tag)}
                         className={cn(
-                          "px-3 py-1 rounded-full font-medium transition-all shrink-0 border text-xs",
+                          "px-3.5 py-1.5 rounded-full font-medium transition-all shrink-0 border text-xs sm:text-sm",
                           isSelected
-                            ? "bg-red-600 text-white border-red-600 font-semibold shadow-xs"
-                            : "bg-white text-gray-600 border-gray-200/80 hover:border-gray-300 hover:text-gray-900 shadow-xs"
+                            ? "bg-red-600 text-white border-red-600 font-semibold shadow-sm"
+                            : "bg-white text-gray-700 border-gray-200/90 hover:border-gray-300 hover:text-gray-900 shadow-xs"
                         )}
                       >
                         {tag}
@@ -568,7 +568,7 @@ export default function App() {
                         title="Copie le texte et ouvre LinkedIn pour publier"
                       >
                         <Linkedin size={16} className="fill-current shrink-0" />
-                        <span>Partager sur LinkedIn</span>
+                        <span>Partager</span>
                       </button>
                     </div>
                   )}
@@ -712,7 +712,7 @@ export default function App() {
                       title="Copie le texte et ouvre LinkedIn pour publier"
                     >
                       <Linkedin size={16} className="fill-current shrink-0" />
-                      <span>Partager sur LinkedIn</span>
+                      <span>Partager</span>
                     </button>
                   </div>
                 </div>
