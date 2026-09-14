@@ -1,0 +1,6 @@
+{
+  "name": "01 radar",
+  "description": "Une application de veille technologique pour générer des posts LinkedIn attractifs pour les recruteurs tech.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
