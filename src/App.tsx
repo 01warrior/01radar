@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame } from 'lucide-react';
+import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -42,6 +42,7 @@ const FEEDS: FeedSource[] = [
 
 export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState<boolean>(false);
   const [activeFeed, setActiveFeed] = useState<string>('bfm_tech');
   const [articles, setArticles] = useState<FeedItem[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -91,6 +92,22 @@ export default function App() {
     localStorage.setItem('techwatch_saved_posts', JSON.stringify(savedPosts));
   }, [savedPosts]);
 
+  // Empêcher le défilement de l'arrière-plan quand un modal ou BottomSheet est ouvert
+  useEffect(() => {
+    const isAnyModalOpen = isCategorySheetOpen || viewingSavedPost !== null;
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.touchAction = originalTouchAction;
+      };
+    }
+  }, [isCategorySheetOpen, viewingSavedPost]);
+
   useEffect(() => {
     fetchFeeds(activeFeed);
   }, [activeFeed]);
@@ -111,6 +128,17 @@ export default function App() {
       setErrorFeeds('Erreur de connexion au serveur.');
     } finally {
       setLoadingFeeds(false);
+    }
+  };
+
+  const handleCategorySelect = (cat: string) => {
+    setSelectedCategory(cat);
+    const firstInCat = cat === 'Tous' ? FEEDS[0] : FEEDS.find(f => f.category === cat);
+    if (firstInCat) {
+      const isCurrentActiveInNewCat = cat === 'Tous' || FEEDS.some(f => f.id === activeFeed && f.category === cat);
+      if (!isCurrentActiveInNewCat) {
+        setActiveFeed(firstInCat.id);
+      }
     }
   };
 
@@ -373,9 +401,9 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="w-full flex flex-col"
             >
-              {/* Instant Search Bar */}
-              <div className="mb-5">
-                <div className="relative flex items-center">
+              {/* Instant Search Bar + Mobile Category Trigger Button */}
+              <div className="mb-5 flex items-center gap-2.5">
+                <div className="relative flex-1 flex items-center">
                   <Search size={20} className="absolute left-4 text-gray-400 pointer-events-none" />
                   <input
                     type="text"
@@ -394,23 +422,35 @@ export default function App() {
                     </button>
                   )}
                 </div>
+
+                {/* Bouton Filtre/Catégories mobile à droite de la barre de recherche */}
+                <button
+                  onClick={() => setIsCategorySheetOpen(true)}
+                  className={cn(
+                    "sm:hidden flex items-center justify-center gap-1.5 px-3.5 py-3.5 rounded-2xl border transition-all shrink-0 shadow-xs font-semibold text-sm",
+                    selectedCategory !== 'Tous'
+                      ? "bg-red-600 text-white border-red-600 shadow-sm"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 active:bg-gray-100"
+                  )}
+                  title="Choisir une catégorie"
+                  aria-label="Choisir une catégorie"
+                >
+                  <SlidersHorizontal size={18} />
+                  <span className="max-w-[70px] truncate text-xs">
+                    {selectedCategory === 'Tous' ? 'Filtres' : selectedCategory.split(' ')[0]}
+                  </span>
+                </button>
               </div>
 
-              {/* Category Pills & Feed Tabs Bar */}
+              {/* Category Pills (Desktop) & Feed Tabs Bar */}
               <div className="pb-4 mb-6 border-b border-gray-200/80 flex flex-col gap-3">
-                {/* Category selector */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
+                {/* Category selector visible sur desktop / tablettes */}
+                <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide no-scrollbar touch-pan-x">
                   <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 mr-1 shrink-0">Catégories :</span>
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat}
-                      onClick={() => {
-                        setSelectedCategory(cat);
-                        const firstInCat = cat === 'Tous' ? FEEDS[0] : FEEDS.find(f => f.category === cat);
-                        if (firstInCat && !visibleFeeds.some(f => f.id === activeFeed)) {
-                          setActiveFeed(firstInCat.id);
-                        }
-                      }}
+                      onClick={() => handleCategorySelect(cat)}
                       className={cn(
                         "px-3 py-1 rounded-lg text-xs font-semibold transition-all shrink-0",
                         selectedCategory === cat
@@ -819,6 +859,91 @@ export default function App() {
                 </div>
               </motion.div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile BottomSheet Modal pour les Catégories */}
+        <AnimatePresence>
+          {isCategorySheetOpen && (
+            <div className="fixed inset-0 z-50 flex items-end sm:hidden overscroll-none touch-none">
+              {/* Backdrop flouté */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsCategorySheetOpen(false)}
+                onTouchMove={(e) => e.preventDefault()}
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs touch-none"
+              />
+
+              {/* Panneau BottomSheet glissant depuis le bas */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                className="relative w-full bg-white rounded-t-3xl p-6 shadow-2xl z-10 max-h-[85vh] overflow-y-auto overscroll-contain flex flex-col touch-pan-y"
+              >
+                {/* Poignée de drag/visual bar */}
+                <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-5 shrink-0" />
+
+                {/* En-tête du BottomSheet */}
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                      <Layers size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-900 leading-tight">Filtrer par catégorie</h3>
+                      <p className="text-xs text-gray-500">Sélectionnez une thématique de veille</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsCategorySheetOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Liste des catégories dans le BottomSheet */}
+                <div className="flex flex-col gap-2.5 pb-2">
+                  {CATEGORIES.map((cat) => {
+                    const isSelected = selectedCategory === cat;
+                    const count = cat === 'Tous' ? FEEDS.length : FEEDS.filter(f => f.category === cat).length;
+                    return (
+                      <button
+                        key={`sheet-${cat}`}
+                        onClick={() => {
+                          handleCategorySelect(cat);
+                          setIsCategorySheetOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between p-3.5 rounded-2xl text-left font-medium transition-all",
+                          isSelected
+                            ? "bg-red-50 text-red-600 font-semibold border-2 border-red-500/80 shadow-xs"
+                            : "bg-gray-50 text-gray-800 hover:bg-gray-100 border-2 border-transparent"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "w-2.5 h-2.5 rounded-full",
+                            isSelected ? "bg-red-600" : "bg-gray-300"
+                          )} />
+                          <span className="text-sm">{cat}</span>
+                        </div>
+                        <span className={cn(
+                          "text-xs px-2 py-0.5 rounded-full font-semibold",
+                          isSelected ? "bg-red-200/80 text-red-800" : "bg-gray-200 text-gray-600"
+                        )}>
+                          {count} source{count > 1 ? 's' : ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
     </div>
