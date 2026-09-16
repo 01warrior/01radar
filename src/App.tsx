@@ -554,9 +554,25 @@ export default function App() {
               {/* Articles Stream */}
               <div className="w-full">
                 {loadingFeeds && articles.length === 0 ? (
-                  <div className="py-24 flex flex-col items-center justify-center text-gray-400 gap-3">
-                    <Loader2 size={28} className="animate-spin text-red-600" />
-                    <p className="text-sm font-medium">Chargement des articles...</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="p-6 rounded-2xl bg-white border border-gray-100 flex flex-col gap-4 animate-pulse">
+                        <div>
+                          <div className="h-6 bg-gray-200 rounded-md w-3/4 mb-3"></div>
+                          <div className="h-6 bg-gray-200 rounded-md w-1/2 mb-3"></div>
+                          <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+                        </div>
+                        <div className="flex-1 space-y-2 mt-2">
+                          <div className="h-4 bg-gray-100 rounded w-full"></div>
+                          <div className="h-4 bg-gray-100 rounded w-full"></div>
+                          <div className="h-4 bg-gray-100 rounded w-5/6"></div>
+                        </div>
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                          <div className="h-4 bg-gray-200 rounded w-24"></div>
+                          <div className="h-9 bg-gray-200 rounded-full w-28"></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : errorFeeds ? (
                   <div className="p-4 rounded-xl bg-red-50 text-red-700 border border-red-200 text-sm">
