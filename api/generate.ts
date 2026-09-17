@@ -45,6 +45,8 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ success: false, error: 'URL is required' });
     }
 
+    const tone = body?.tone || 'jeune_ingenieur';
+
     // Fetch article content
     let articleText = '';
     try {
@@ -71,19 +73,43 @@ export default async function handler(req: any, res: any) {
       articleText = articleText.substring(0, 30000); 
     }
 
-    const prompt = `Tu es le ghostwriter d'un jeune ingénieur logiciel en fin d'études. Ton objectif est de transformer une actualité ou ressource technique en un post LinkedIn captivant, conçu spécifiquement pour attirer des recruteurs tech et des Engineering Managers.
+    let personaContext = "";
+    let impactContext = "";
 
-L'objectif du post est de valoriser :
-- Sa curiosité intellectuelle et sa veille active.
-- Sa capacité à vulgariser un sujet complexe (soft skill très prisée).
-- Son état d'esprit "problem-solving" et son envie d'apprendre.
+    switch (tone) {
+      case 'expert':
+        personaContext = "Tu es un Ingénieur Logiciel Staff/Senior et tu publies sur LinkedIn.";
+        impactContext = `Une phrase montrant l'expertise et la vision d'architecture ("D'après mon expérience sur des systèmes distribués, ce type de pattern permet de...").`;
+        break;
+      case 'vulgarisateur':
+        personaContext = "Tu es un Développeur Créateur de contenu qui adore vulgariser la tech complexe pour tous les niveaux.";
+        impactContext = `Une phrase qui connecte le sujet à la vraie vie avec une métaphore simple ("Au final, c'est un peu comme organiser une bibliothèque géante...").`;
+        break;
+      case 'manager':
+        personaContext = "Tu es un Engineering Manager ou CTO qui partage sa vision d'équipe, de management et de l'industrie tech.";
+        impactContext = `Une phrase axée sur la productivité, l'équipe ou le ROI ("C'est le genre de pratique qui peut améliorer considérablement notre delivery...").`;
+        break;
+      case 'neutre':
+        personaContext = "Tu es un veilleur technologique professionnel qui partage de l'information factuelle et précise.";
+        impactContext = `Une conclusion purement factuelle, résumant les perspectives futures de cette technologie sans avis personnel marqué.`;
+        break;
+      case 'jeune_ingenieur':
+      default:
+        personaContext = "Tu es le ghostwriter d'un jeune ingénieur logiciel en fin d'études. Ton objectif est de transformer une actualité en un post LinkedIn captivant pour attirer des recruteurs tech.";
+        impactContext = `Une phrase montrant la posture d'ingénieur curieux ("En tant que jeune ingénieur, je retiens que le compromis entre performance et simplicité reste au centre des enjeux...").`;
+        break;
+    }
+
+    const prompt = `${personaContext}
+
+L'objectif du post est de valoriser une veille technologique pertinente.
 
 Règles de style impératives :
-1. Accroche (Hook) : Courte, percutante, montrant une prise de recul ou un apprentissage
-2. Le Problème & La Solution (Corps du post) : Explique simplement en 3 ou 4 points clés : Quel était le problème initial ? Comment cette technologie y répond ?
-3. Ce que j'en retiens (Impact personnel) : Une phrase montrant la posture d'ingénieur ("En tant que jeune ingénieur, je retiens que le compromis entre performance et simplicité reste central...").
-4. Appel à l'action sobre : Invitation à l'échange ("Vous utilisez déjà cette approche dans vos équipes ?", "Curieux d'avoir vos retours d'expérience !").
-5. Zéro cliché d'IA : Ne jamais dire "À l'ère du numérique", "Je suis ravi d'annoncer", "Game changer". Ton naturel, humble, professionnel et enthousiaste.
+1. Accroche (Hook) : Courte, percutante, invitant à la lecture.
+2. Le Problème & La Solution (Corps du post) : Explique simplement en quelques points clés : Quel était le problème initial ? Comment cette technologie/article y répond ?
+3. L'impact / La prise de recul : ${impactContext}
+4. Appel à l'action sobre : Invitation à l'échange ("Vous utilisez déjà cette approche ?", "Qu'en pensez-vous ?").
+5. Zéro cliché d'IA : Ne jamais dire "À l'ère du numérique", "Je suis ravi de partager", "Un vrai game changer". Reste naturel, humble et authentique.
 
 Entrée :
 - Source : ${url}
@@ -91,7 +117,7 @@ Entrée :
 
 Format de sortie attendu :
 - Le post prêt à copier-coller (avec sauts de ligne aérés).
-- 3 hashtags pertinents (ex: #SoftwareEngineering #Architecture #VeilleTech).`;
+- 3 hashtags pertinents.`;
 
     const genAI = getGenAI();
     const aiResponse = await genAI.models.generateContent({

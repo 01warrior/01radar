@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers } from 'lucide-react';
+import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers, User, Briefcase, Lightbulb, Users, AlignLeft, MessageSquareText } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -12,6 +12,14 @@ function cn(...inputs: ClassValue[]) {
 }
 
 const CATEGORIES = ['Tous', 'FR (Français)', 'Actualités IA', 'Recherche & Modèles', 'Ingénierie & Tech'] as const;
+
+const TONES = [
+  { id: 'jeune_ingenieur', label: 'Étudiant / Junior', icon: User, desc: 'Curieux, volontaire et en apprentissage' },
+  { id: 'expert', label: 'Expert / Senior', icon: Briefcase, desc: 'Expérimenté, vision d\'architecture' },
+  { id: 'vulgarisateur', label: 'Vulgarisateur', icon: Lightbulb, desc: 'Pédagogue, analogies simples' },
+  { id: 'manager', label: 'Manager / Lead', icon: Users, desc: 'Focus équipe, process et productivité' },
+  { id: 'neutre', label: 'Neutre / Factuel', icon: AlignLeft, desc: 'Direct, journalistique, sans avis' },
+] as const;
 
 const FEEDS: FeedSource[] = [
   // Médias Francophones (en tête)
@@ -57,6 +65,12 @@ export default function App() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const feedsScrollRef = useRef<HTMLDivElement>(null);
 
+  const [isToneModalOpen, setIsToneModalOpen] = useState(false);
+  const [articleToGenerate, setArticleToGenerate] = useState<FeedItem | null>(null);
+  const [selectedTone, setSelectedTone] = useState<string>(() => {
+    return localStorage.getItem('techwatch_selected_tone') || 'jeune_ingenieur';
+  });
+
   const scrollFeeds = (direction: 'left' | 'right') => {
     if (feedsScrollRef.current) {
       const scrollAmount = 260;
@@ -92,9 +106,13 @@ export default function App() {
     localStorage.setItem('techwatch_saved_posts', JSON.stringify(savedPosts));
   }, [savedPosts]);
 
+  useEffect(() => {
+    localStorage.setItem('techwatch_selected_tone', selectedTone);
+  }, [selectedTone]);
+
   // Empêcher le défilement de l'arrière-plan quand un modal ou BottomSheet est ouvert
   useEffect(() => {
-    const isAnyModalOpen = isCategorySheetOpen || viewingSavedPost !== null;
+    const isAnyModalOpen = isCategorySheetOpen || viewingSavedPost !== null || isToneModalOpen;
     if (isAnyModalOpen) {
       const originalOverflow = document.body.style.overflow;
       const originalTouchAction = document.body.style.touchAction;
@@ -106,7 +124,7 @@ export default function App() {
         document.body.style.touchAction = originalTouchAction;
       };
     }
-  }, [isCategorySheetOpen, viewingSavedPost]);
+  }, [isCategorySheetOpen, viewingSavedPost, isToneModalOpen]);
 
   useEffect(() => {
     fetchFeeds(activeFeed);
@@ -142,7 +160,13 @@ export default function App() {
     }
   };
 
-  const handleGenerate = async (article: FeedItem) => {
+  const openToneModal = (article: FeedItem) => {
+    setArticleToGenerate(article);
+    setIsToneModalOpen(true);
+  };
+
+  const handleGenerate = async (article: FeedItem, tone: string) => {
+    setIsToneModalOpen(false);
     setSelectedArticle(article);
     setGenerating(true);
     setGeneratedPost('');
@@ -154,7 +178,7 @@ export default function App() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: article.link }),
+        body: JSON.stringify({ url: article.link, tone }),
       });
       const data = await response.json();
       
@@ -277,7 +301,7 @@ export default function App() {
                 {[...tickerArticles, ...tickerArticles].map((art, i) => (
                   <button
                     key={`ticker-${art.link}-${i}`}
-                    onClick={() => handleGenerate(art)}
+                    onClick={() => openToneModal(art)}
                     className="inline-flex items-center gap-2 text-gray-300 hover:text-white hover:underline transition-colors text-left cursor-pointer"
                     title="Cliquer pour générer un post"
                   >
@@ -642,7 +666,7 @@ export default function App() {
                               Lire l'original
                             </a>
                             <button
-                              onClick={() => handleGenerate(article)}
+                              onClick={() => openToneModal(article)}
                               className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-50 text-gray-800 group-hover:bg-red-600 group-hover:text-white text-sm font-semibold rounded-full transition-all duration-300 shadow-sm group-hover:shadow-md group-hover:shadow-red-600/20"
                             >
                               <span>Générer</span>
@@ -683,7 +707,7 @@ export default function App() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {(generatedPost || generationError) && (
                     <button
-                      onClick={() => handleGenerate(selectedArticle)}
+                      onClick={() => openToneModal(selectedArticle)}
                       disabled={generating}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 shadow-sm"
                       title="Générer un autre brouillon"
@@ -754,7 +778,7 @@ export default function App() {
                       </p>
                     </div>
                     <button 
-                      onClick={() => handleGenerate(selectedArticle)}
+                      onClick={() => openToneModal(selectedArticle)}
                       className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-semibold rounded-lg transition-colors shadow-sm"
                     >
                       <RefreshCw size={16} />
@@ -957,6 +981,106 @@ export default function App() {
                       </button>
                     );
                   })}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Tone Selection Modal */}
+        <AnimatePresence>
+          {isToneModalOpen && articleToGenerate && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overscroll-none touch-none">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsToneModalOpen(false)}
+                onTouchMove={(e) => e.preventDefault()}
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs touch-none"
+              />
+              
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-2xl z-10 flex flex-col max-h-[90vh] overflow-hidden"
+              >
+                <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                      <MessageSquareText size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-gray-900 leading-tight">Ton du post</h3>
+                      <p className="text-xs text-gray-500 line-clamp-1">Sélectionnez la persona pour la génération</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsToneModalOpen(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3 overflow-y-auto pr-1 pb-2">
+                  {TONES.map((tone) => {
+                    const isSelected = selectedTone === tone.id;
+                    const Icon = tone.icon;
+                    return (
+                      <button
+                        key={`tone-${tone.id}`}
+                        onClick={() => setSelectedTone(tone.id)}
+                        className={cn(
+                          "w-full flex items-start gap-4 p-4 rounded-2xl text-left transition-all border-2",
+                          isSelected
+                            ? "bg-red-50 border-red-500/80 shadow-xs"
+                            : "bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                          isSelected ? "bg-red-600 text-white" : "bg-gray-100 text-gray-500"
+                        )}>
+                          <Icon size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className={cn("font-bold text-sm mb-1", isSelected ? "text-red-900" : "text-gray-900")}>
+                            {tone.label}
+                          </h4>
+                          <p className={cn("text-xs leading-relaxed", isSelected ? "text-red-700/80" : "text-gray-500")}>
+                            {tone.desc}
+                          </p>
+                        </div>
+                        <div className="flex items-center h-10 shrink-0">
+                          <div className={cn(
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                            isSelected ? "border-red-600 bg-red-600" : "border-gray-300 bg-white"
+                          )}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <div className="mt-5 pt-5 border-t border-gray-100 flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setIsToneModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl font-semibold text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => handleGenerate(articleToGenerate, selectedTone)}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
+                  >
+                    <Sparkles size={16} />
+                    Générer le post
+                  </button>
                 </div>
               </motion.div>
             </div>
