@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers, User, Briefcase, Lightbulb, Users, AlignLeft, MessageSquareText } from 'lucide-react';
+import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers, User, Briefcase, Lightbulb, Users, AlignLeft, MessageSquareText, Gift } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -679,6 +679,49 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* Bannière Promotionnelle Pleine Largeur */}
+              {!loadingFeeds && !errorFeeds && (
+                <div className="mt-12 w-full">
+                  <div className="relative isolate overflow-hidden bg-red-600 rounded-3xl p-8 sm:p-10 shadow-xl shadow-black/15 border-2 border-black">
+                    {/* Bulles design décoratives rentrées pour préserver les coins */}
+                    <div className="absolute -top-16 -right-16 w-56 h-56 bg-red-500 rounded-full mix-blend-multiply filter blur-2xl opacity-60 animate-pulse pointer-events-none"></div>
+                    <div className="absolute bottom-3 left-16 w-48 h-48 bg-red-800/60 rounded-full mix-blend-multiply filter blur-xl opacity-60 pointer-events-none"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-24 bg-gradient-to-r from-transparent via-white/5 to-transparent -rotate-12 pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-8">
+                      <div className="flex-1 text-center sm:text-left text-white">
+                        <h3 className="font-extrabold text-2xl sm:text-3xl tracking-tight mb-3">
+                          Boostez votre productivité avec l'IA
+                        </h3>
+                        <p className="text-red-100 text-sm sm:text-base leading-relaxed max-w-2xl">
+                          Découvrez les meilleurs outils pour optimiser votre quotidien et formez-vous pour rester à la pointe des nouvelles technologies, sans exploser votre budget.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-3 w-full sm:w-auto shrink-0">
+                        <a 
+                          href="https://bon-p-lan-ai.vercel.app"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-red-600 font-bold text-sm rounded-xl hover:bg-red-50 hover:scale-105 transition-all shadow-md"
+                        >
+                          <Gift size={18} />
+                          Bons plans IA gratuits
+                        </a>
+                        <a 
+                          href="https://site-formation-ten.vercel.app/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-black text-white font-bold text-sm rounded-xl hover:bg-gray-900 transition-all shadow-md"
+                        >
+                          <ExternalLink size={18} />
+                          Se former sur les outils IA
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             /* DRAFT VIEW DIRECTLY ON PAGE */
@@ -1025,7 +1068,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="flex flex-col gap-3 overflow-y-auto pr-1 pb-2">
+                <div className="flex flex-col gap-3 overflow-y-auto pr-1 pb-2 scrollbar-hide no-scrollbar">
                   {TONES.map((tone) => {
                     const isSelected = selectedTone === tone.id;
                     const Icon = tone.icon;
@@ -1076,9 +1119,8 @@ export default function App() {
                   </button>
                   <button
                     onClick={() => handleGenerate(articleToGenerate, selectedTone)}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
+                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-xl font-semibold text-sm bg-red-600 text-white hover:bg-red-700 transition-colors shadow-sm"
                   >
-                    <Sparkles size={16} />
                     Générer le post
                   </button>
                 </div>
@@ -1086,6 +1128,23 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Footer Léger */}
+        <footer className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-auto border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+            <div>
+              <span>&copy; {new Date().getFullYear()} 01 radar. Tous droits réservés.</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="https://bon-p-lan-ai.vercel.app" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 transition-colors">
+                Bons plans IA
+              </a>
+              <a href="https://site-formation-ten.vercel.app/" target="_blank" rel="noopener noreferrer" className="hover:text-red-600 transition-colors">
+                Se former
+              </a>
+            </div>
+          </div>
+        </footer>
     </div>
   );
 }
