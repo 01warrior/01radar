@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers, User, Briefcase, Lightbulb, Users, AlignLeft, MessageSquareText, Gift } from 'lucide-react';
+import { Newspaper, ChevronRight, ChevronLeft, Copy, Check, ExternalLink, Loader2, RefreshCw, Rss, ArrowRight, ArrowLeft, Bookmark, BookmarkCheck, Trash2, X, Sparkles, Search, Linkedin, Flame, SlidersHorizontal, Layers, User, Briefcase, Lightbulb, AlignLeft, MessageSquareText, Gift } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, parseISO } from 'date-fns';
@@ -17,7 +17,6 @@ const TONES = [
   { id: 'jeune_ingenieur', label: 'Étudiant / Junior', icon: User, desc: 'Curieux, volontaire et en apprentissage' },
   { id: 'expert', label: 'Expert / Senior', icon: Briefcase, desc: 'Expérimenté, vision d\'architecture' },
   { id: 'vulgarisateur', label: 'Vulgarisateur', icon: Lightbulb, desc: 'Pédagogue, analogies simples' },
-  { id: 'manager', label: 'Manager / Lead', icon: Users, desc: 'Focus équipe, process et productivité' },
   { id: 'neutre', label: 'Neutre / Factuel', icon: AlignLeft, desc: 'Direct, journalistique, sans avis' },
 ] as const;
 
@@ -68,7 +67,8 @@ export default function App() {
   const [isToneModalOpen, setIsToneModalOpen] = useState(false);
   const [articleToGenerate, setArticleToGenerate] = useState<FeedItem | null>(null);
   const [selectedTone, setSelectedTone] = useState<string>(() => {
-    return localStorage.getItem('techwatch_selected_tone') || 'jeune_ingenieur';
+    const saved = localStorage.getItem('techwatch_selected_tone');
+    return saved && saved !== 'manager' ? saved : 'jeune_ingenieur';
   });
 
   const scrollFeeds = (direction: 'left' | 'right') => {
